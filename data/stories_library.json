@@ -1,0 +1,366 @@
+[
+  {
+    "title": "Outer Space",
+    "text": "Space exploration uses astronomy and technology to explore outer space. Physical exploration is conducted by human spaceflights and robotic spacecraft. Massive rockets push payloads beyond Earth gravity.",
+    "synonyms": {}
+  },
+  {
+    "title": "Ancient Egypt",
+    "text": "Ancient Egypt was a civilization in North Africa along the lower reaches of the Nile River. Its success came from its ability to adapt to agriculture. The flooding provided rich soil for gigantic harvests.",
+    "synonyms": {
+      "civilization": "culture",
+      "adapt": "adjust",
+      "soil": "ground"
+    }
+  },
+  {
+    "title": "Bicycle",
+    "text": "A bicycle is a human-powered land vehicle with two wheels attached to a frame. Introduced in the 19th century, riding a bicycle is an efficient form of transportation that promotes physical fitness.",
+    "synonyms": {
+      "transportation": "fare"
+    }
+  },
+  {
+    "title": "Ocean Deep",
+    "text": "The deep ocean is the lowest layer in the ocean, existing below the thermocline. Immense pressure and cold temperatures make this environment harsh for standard marine life.",
+    "synonyms": {
+      "ocean": "sea",
+      "layer": "bed",
+      "existing": "be",
+      "immense": "huge",
+      "environment": "surround"
+    }
+  },
+  {
+    "title": "Volcanoes",
+    "text": "A volcano is a rupture in the crust of a planetary-mass object that allows hot lava and volcanic ash to escape from a magma chamber below the surface.",
+    "synonyms": {
+      "object": "target"
+    }
+  },
+  {
+    "title": "Dinosaur",
+    "text": "Dinosaurs are a diverse group of reptiles of the clade Dinosauria. They first appeared during the Triassic period and became the dominant terrestrial vertebrates.",
+    "synonyms": {}
+  },
+  {
+    "title": "Electricity",
+    "text": "Electricity is the set of physical phenomena associated with the presence and motion of matter that has a property of electric charge.",
+    "synonyms": {
+      "presence": "front",
+      "motion": "move",
+      "property": "place",
+      "charge": "complaint"
+    }
+  },
+  {
+    "title": "Renaissance",
+    "text": "The Renaissance was a fervent period of European cultural, artistic, political, and economic rebirth following the Middle Ages.",
+    "synonyms": {}
+  },
+  {
+    "title": "Photosynthesis",
+    "text": "Photosynthesis is a biological process used by plants to convert light energy into chemical energy that can later be released to fuel activities.",
+    "synonyms": {
+      "energy": "push"
+    }
+  },
+  {
+    "title": "Pyramid",
+    "text": "A pyramid is a structure whose outer surfaces are triangular and converge to a single point at the top. The base of a pyramid can be trilateral or quadrilateral.",
+    "synonyms": {}
+  },
+  {
+    "title": "Glacier",
+    "text": "A glacier is a persistent body of dense ice that is constantly moving under its own weight. It forms where accumulation of snow exceeds its ablation.",
+    "synonyms": {
+      "persistent": "lasting",
+      "dense": "heavy",
+      "constantly": "always",
+      "moving": "go"
+    }
+  },
+  {
+    "title": "Atmosphere",
+    "text": "An atmosphere is a layer of gas that surrounds a body of matter. Gases are retained by the gravity of the body if gravity is high and temperature is low.",
+    "synonyms": {
+      "atmosphere": "air",
+      "layer": "bed"
+    }
+  },
+  {
+    "title": "Architecture",
+    "text": "Architecture is both the process and the product of planning, designing, and constructing buildings or other structures.",
+    "synonyms": {
+      "planning": "preparation"
+    }
+  },
+  {
+    "title": "Biodiversity",
+    "text": "Biodiversity is the variety and variability of life on Earth. It is a measure of variation at the genetic, species, and ecosystem levels.",
+    "synonyms": {
+      "measure": "step"
+    }
+  },
+  {
+    "title": "Tsunami",
+    "text": "A tsunami is a series of waves in a water body caused by the displacement of a large volume of water, generally in an ocean or a large lake.",
+    "synonyms": {
+      "volume": "book",
+      "generally": "mostly",
+      "ocean": "sea"
+    }
+  },
+  {
+    "title": "Solar System",
+    "text": "The Solar System is the gravitationally bound system of the Sun and the objects that orbit it, either directly or indirectly.",
+    "synonyms": {
+      "orbit": "field",
+      "directly": "now"
+    }
+  },
+  {
+    "title": "Microscope",
+    "text": "A microscope is a laboratory instrument used to examine objects that are too small to be seen by the naked eye.",
+    "synonyms": {
+      "examine": "see"
+    }
+  },
+  {
+    "title": "Gravity",
+    "text": "Gravity is a fundamental interaction which causes mutual attraction between all things with mass or energy.",
+    "synonyms": {
+      "mutual": "common",
+      "mass": "lot",
+      "energy": "push"
+    }
+  },
+  {
+    "title": "Fossil",
+    "text": "A fossil is any preserved remains, impression, or trace of any once-living thing from a past geological age.",
+    "synonyms": {
+      "impression": "feeling",
+      "trace": "touch"
+    }
+  },
+  {
+    "title": "Antibiotics",
+    "text": "Antibiotics are medications that destroy or slow down the growth of bacteria to treat infections in humans and animals.",
+    "synonyms": {
+      "growth": "increase"
+    }
+  },
+  {
+    "title": "Climate Change",
+    "text": "Climate change includes both global warming driven by human-induced emissions of greenhouse gases and the resulting large-scale shifts in weather patterns.",
+    "synonyms": {
+      "climate": "mood",
+      "global": "world"
+    }
+  },
+  {
+    "title": "DNA Structure",
+    "text": "Deoxyribonucleic acid is a polymer composed of two polynucleotide chains that coil around each other to form a double helix carrying genetic instructions.",
+    "synonyms": {
+      "acid": "dot"
+    }
+  },
+  {
+    "title": "Ecosystems",
+    "text": "An ecosystem consists of all the organisms and the physical environment with which they interact within a designated geographical region.",
+    "synonyms": {
+      "environment": "surround",
+      "region": "part"
+    }
+  },
+  {
+    "title": "Plate Tectonics",
+    "text": "Plate tectonics is a scientific theory describing the large-scale motion of seven large plates and the movements of a larger number of smaller plates of Earth's lithosphere.",
+    "synonyms": {
+      "motion": "move"
+    }
+  },
+  {
+    "title": "Renewable Energy",
+    "text": "Renewable energy is energy derived from natural resources that replenish themselves in less time than a human lifetime without depleting global resources.",
+    "synonyms": {
+      "energy": "push",
+      "global": "world"
+    }
+  },
+  {
+    "title": "Artificial Intelligence",
+    "text": "Artificial intelligence is intelligence demonstrated by machines, as opposed to the natural intelligence displayed by animals including humans.",
+    "synonyms": {}
+  },
+  {
+    "title": "Telescope",
+    "text": "A telescope is an optical instrument that makes distant objects appear magnified by using an arrangement of lenses or curved mirrors.",
+    "synonyms": {
+      "telescope": "scope",
+      "distant": "remote",
+      "arrangement": "system"
+    }
+  },
+  {
+    "title": "Microbiology",
+    "text": "Microbiology is the scientific study of microorganisms, those being unicellular, multicellular, or acellular living microscopic structures.",
+    "synonyms": {}
+  },
+  {
+    "title": "Vaccines",
+    "text": "A vaccine is a biological preparation that provides active acquired immunity to a particular infectious disease by stimulating antibodies.",
+    "synonyms": {
+      "particular": "item"
+    }
+  },
+  {
+    "title": "Black Holes",
+    "text": "A black hole is a region of spacetime where gravity is so strong that nothing, including light and other electromagnetic waves, has enough energy to escape.",
+    "synonyms": {
+      "region": "part",
+      "energy": "push"
+    }
+  },
+  {
+    "title": "Genetics",
+    "text": "Genetics is a branch of biology concerned with the study of genes, genetic variation, and heredity in organisms.",
+    "synonyms": {
+      "concerned": "touch"
+    }
+  },
+  {
+    "title": "Geology",
+    "text": "Geology is a branch of Earth science concerned with the solid Earth, the rocks of which it is composed, and the processes by which they change over time.",
+    "synonyms": {
+      "concerned": "touch"
+    }
+  },
+  {
+    "title": "Mathematics",
+    "text": "Mathematics includes the study of such topics as numbers, formulas and related structures, shapes and spaces in which they are contained, and quantities and their changes.",
+    "synonyms": {
+      "mathematics": "maths",
+      "related": "touch"
+    }
+  },
+  {
+    "title": "Philosophy",
+    "text": "Philosophy is the systematized study of general and fundamental questions touching upon topics such as existence, reason, knowledge, value, mind, and language.",
+    "synonyms": {
+      "existence": "world"
+    }
+  },
+  {
+    "title": "Economics",
+    "text": "Economics is the social science that studies the production, distribution, and consumption of goods and services across different global markets.",
+    "synonyms": {
+      "consumption": "use",
+      "global": "world"
+    }
+  },
+  {
+    "title": "Psychology",
+    "text": "Psychology is the scientific study of mind and behavior, encompassing the biological pressures, social pressures, and environmental factors that influence actions.",
+    "synonyms": {}
+  },
+  {
+    "title": "Sociology",
+    "text": "Sociology is a social science that focuses on society, human social behavior, patterns of social relationships, social interaction, and aspects of culture.",
+    "synonyms": {}
+  },
+  {
+    "title": "Anthropology",
+    "text": "Anthropology is the scientific study of humanity, concerned with human behavior, human biology, cultures, societies, and linguistics in both the present and past.",
+    "synonyms": {
+      "humanity": "world",
+      "concerned": "touch"
+    }
+  },
+  {
+    "title": "Botany",
+    "text": "Botany is the branch of biology that deals with the study of plants, including their structure, properties, and biochemical processes.",
+    "synonyms": {}
+  },
+  {
+    "title": "Zoology",
+    "text": "Zoology is the branch of biology that studies the animal kingdom, including the structure, embryology, evolution, classification, habits, and distribution of all animals.",
+    "synonyms": {
+      "evolution": "development"
+    }
+  },
+  {
+    "title": "Astronomy",
+    "text": "Astronomy is a natural science that studies celestial objects and phenomena, using mathematics, physics, and chemistry in order to explain their origin and evolution.",
+    "synonyms": {
+      "mathematics": "maths",
+      "origin": "source",
+      "evolution": "development"
+    }
+  },
+  {
+    "title": "Thermodynamics",
+    "text": "Thermodynamics is a branch of physics that deals with heat, work, and temperature, and their relation to energy, entropy, and physical properties of matter.",
+    "synonyms": {
+      "energy": "push"
+    }
+  },
+  {
+    "title": "Quantum Mechanics",
+    "text": "Quantum mechanics is a fundamental theory in physics that provides a description of the physical properties of nature at the scale of atoms and subatomic particles.",
+    "synonyms": {}
+  },
+  {
+    "title": "Nanotechnology",
+    "text": "Nanotechnology is the engineering of functional systems at the molecular scale, covering a broad range of topics in physics, chemistry, and materials science.",
+    "synonyms": {
+      "engineering": "technology"
+    }
+  },
+  {
+    "title": "Robotics",
+    "text": "Robotics is an interdisciplinary branch of engineering and computer science that involves the design, construction, operation, and use of robots.",
+    "synonyms": {
+      "engineering": "technology",
+      "construction": "building"
+    }
+  },
+  {
+    "title": "Cybersecurity",
+    "text": "Cybersecurity is the practice of protecting systems, networks, and programs from digital attacks aimed at accessing, changing, or destroying sensitive information.",
+    "synonyms": {
+      "sensitive": "medium"
+    }
+  },
+  {
+    "title": "Cloud Computing",
+    "text": "Cloud computing is the on-demand availability of computer system resources, especially data storage and computing power, without direct active management by the user.",
+    "synonyms": {
+      "data": "information",
+      "storage": "store",
+      "management": "direction"
+    }
+  },
+  {
+    "title": "Machine Learning",
+    "text": "Machine learning is a field of study devoted to understanding and building methods that learn from data to improve performance on a set of tasks.",
+    "synonyms": {
+      "learning": "scholarship",
+      "devoted": "give",
+      "understanding": "agreement",
+      "data": "information"
+    }
+  },
+  {
+    "title": "Biotechnology",
+    "text": "Biotechnology is the integration of natural sciences and engineering sciences in order to achieve the application of organisms, cells, parts thereof and molecular analogues for products.",
+    "synonyms": {
+      "engineering": "technology"
+    }
+  },
+  {
+    "title": "Neuroscience",
+    "text": "Neuroscience is the scientific study of the nervous system, combining physiology, anatomy, molecular biology, developmental biology, cytology, computer science, and mathematical modeling.",
+    "synonyms": {}
+  }
+]
