@@ -5,6 +5,4 @@ matplotlib>=3.7
 # needed only to load Afia's model and render Developer Mode
 scikit-learn>=1.3
 joblib>=1.3
-
-# development only — for running tests
-pytest>=7.0
+wordfreq>=3.0

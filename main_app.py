@@ -1,5 +1,5 @@
 """
-main_app.py — Lexis: an AI-powered vocabulary tutor
+main_app.py — Wordify: an AI-powered vocabulary tutor
 CS 254 Final Project | Owner: Keli (UX & Impact Specialist)
 
 What does this file do?
@@ -32,6 +32,11 @@ from pathlib import Path
 
 import pandas as pd
 import streamlit as st
+
+try:
+    from wordfreq import zipf_frequency
+except ImportError:                      # optional; frequency features degrade
+    zipf_frequency = None
 
 
 # 1. The  configuration...:
@@ -80,67 +85,231 @@ PSEUDOWORDS = [
 # Each highlight class also carries a distinct underline style, so the reading view stays usable for colour-blind users and in greyscale print.
 
 PALETTE = {
-    "ink": "#16181D",
+    "ink": "#14161F",
     "paper": "#FFFDF7",
     "rule": "#E4DFD2",
-    "accent": "#2F5D50",     # library-binding green..
+    "accent": "#17715F",     # library-binding green..
     "muted": "#6B6559",
-    "learn_bg": "#FFE9A8",   # highlighter yellow — the next word to learn...
+    "learn_bg": "#FFD84D",   # highlighter yellow — the next word to learn...
     "learn_line": "#8A6A00",
-    "stretch_bg": "#DCD2F5",  # lilac — beyond the user's level..
+    "stretch_bg": "#B9A6F0",  # lilac — beyond the user's level..
     "stretch_line": "#4B3391",
 }
 
+
+LADDER = ["#17715F", "#4E8B4A", "#9FA13B", "#D9A62E", "#A97BC4", "#6B4FA8"]
+
 CSS = f"""
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter+Tight:wght@400;500;600&display=swap');
+
+  .lexis-masthead {{
+      font-family: 'Inter Tight', -apple-system, sans-serif;
+      margin: 0 0 1.6rem 0;
+  }}
+  .lexis-wordmark {{
+      font-family: 'Fraunces', Georgia, serif;
+      font-weight: 700;
+      font-size: clamp(2.6rem, 6vw, 4rem);
+      letter-spacing: -0.03em;
+      line-height: 0.95;
+      background: linear-gradient(100deg, {PALETTE['accent']} 0%,
+                  {LADDER[3]} 55%, {LADDER[5]} 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      margin: 0;
+  }}
+  .lexis-tagline {{
+      font-size: 0.95rem;
+      color: {PALETTE['muted']};
+      margin: 0.35rem 0 0 0;
+  }}
+
+  /* Signature element: the CEFR ladder. Six rungs, the reader's level filled,
+     the next rung outlined as the target. */
+  .lexis-ladder {{
+      display: flex; gap: 4px; margin: 1.3rem 0 0.5rem 0;
+      font-family: 'Inter Tight', sans-serif;
+  }}
+  .lexis-rung {{
+      flex: 1; height: 34px; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.09em;
+      border-radius: 4px; border: 1.5px solid transparent;
+      color: {PALETTE['muted']}; background: rgba(20,22,31,0.06);
+      position: relative;
+  }}
+  .lexis-rung.past {{ color: rgba(255,255,255,0.92); }}
+  .lexis-rung.here {{
+      color: #fff;
+      box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.55);
+  }}
+  /* Small caret marks the reader's own rung without shifting the row. */
+  .lexis-rung.here::after {{
+      content: ''; position: absolute; bottom: -5px; left: 50%;
+      width: 7px; height: 7px; margin-left: -3.5px;
+      background: inherit; transform: rotate(45deg);
+  }}
+  .lexis-rung.next {{
+      border: 1.5px dashed {PALETTE['learn_line']};
+      background: {PALETTE['learn_bg']}; color: #3D2F00;
+  }}
+  .lexis-ladder-key {{
+      font-family: 'Inter Tight', sans-serif; font-size: 0.78rem;
+      color: {PALETTE['muted']}; margin: 0 0 0.4rem 0;
+  }}
+
   .lexis-page {{
       background: {PALETTE['paper']};
       border: 1px solid {PALETTE['rule']};
       border-left: 3px solid {PALETTE['accent']};
       border-radius: 2px;
-      padding: 2rem 2.25rem;
+      padding: 2.1rem 2.4rem;
       font-family: 'Iowan Old Style', 'Charter', 'Palatino Linotype', Palatino,
                    Georgia, 'Times New Roman', serif;
       font-size: 1.2rem;
       line-height: 2.0;
       color: {PALETTE['ink']};
       max-width: 68ch;
+      box-shadow: 0 1px 3px rgba(20,22,31,0.06);
   }}
   .lexis-page p {{ margin: 0 0 1.1em 0; }}
 
   /* Word at exactly one level above the reader: the learning zone. */
   .w-learn {{
-      background: {PALETTE['learn_bg']};
+      background: linear-gradient(180deg, transparent 52%, {PALETTE['learn_bg']} 52%);
       border-bottom: 2px solid {PALETTE['learn_line']};
       padding: 0 2px;
-      border-radius: 2px;
       cursor: help;
   }}
   /* Word two or more levels above: stretch vocabulary. */
   .w-stretch {{
-      background: {PALETTE['stretch_bg']};
+      background: linear-gradient(180deg, transparent 52%, {PALETTE['stretch_bg']} 52%);
       border-bottom: 2px dotted {PALETTE['stretch_line']};
       padding: 0 2px;
-      border-radius: 2px;
       cursor: help;
   }}
   /* Word already mastered by the reader — left completely plain on purpose. */
   .w-known {{ }}
 
-  .lexis-swatch {{
-      display: inline-block; width: 14px; height: 14px;
-      border-radius: 2px; margin-right: 6px; vertical-align: -2px;
+  /* Word list rendered as dictionary entries rather than plain rows. */
+  .lexis-entry {{
+      font-family: 'Inter Tight', sans-serif;
+      border-left: 3px solid {PALETTE['rule']};
+      background: rgba(20,22,31,0.025);
+      border-radius: 0 4px 4px 0;
+      padding: 0.65rem 1rem 0.75rem 0.9rem;
+      margin-bottom: 0.45rem;
+      min-height: 64px;
+      overflow: visible;
   }}
+  .lexis-entry.learn {{ border-left-color: {PALETTE['learn_line']}; }}
+  .lexis-entry.stretch {{ border-left-color: {PALETTE['stretch_line']}; }}
+  .lexis-headword {{
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.22rem; font-weight: 500; color: {PALETTE['ink']};
+      line-height: 1.3;
+  }}
+  .lexis-gloss {{
+      font-size: 0.95rem; color: {PALETTE['muted']};
+      display: block; margin-top: 0.2rem; line-height: 1.5;
+  }}
+  .lexis-gloss em {{ opacity: 0.65; }}
+  .lexis-chip {{
+      display: inline-block; margin-left: 0.5rem; padding: 1px 7px;
+      border-radius: 999px; font-size: 0.68rem; font-weight: 600;
+      letter-spacing: 0.06em; color: #fff; vertical-align: 2px;
+  }}
+
   .lexis-legend {{
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      font-size: 0.86rem; color: {PALETTE['muted']};
+      display: flex; align-items: center; gap: 1.4rem;
+      font-family: 'Inter Tight', sans-serif;
+      font-size: 0.84rem; color: {PALETTE['muted']};
+      margin: 1.1rem 0 0.9rem 0;
+  }}
+  .lexis-key {{ display: inline-flex; align-items: center; gap: 0.5rem; }}
+  /* Swatch reproduces the marker stroke used on words in the passage, so the
+     key and the page read as the same object. */
+  .lexis-swatch {{
+      display: inline-block; width: 26px; height: 15px; border-radius: 2px;
+  }}
+  .lexis-hint {{
+      padding-left: 1.4rem; border-left: 1px solid {PALETTE['rule']};
+      font-style: italic;
   }}
   .lexis-status {{
       font-family: ui-monospace, 'SF Mono', Menlo, monospace;
       font-size: 0.76rem; line-height: 1.7;
   }}
+
+  /* Streamlit chrome, nudged to match. Selectors are data-testid based so a
+     Streamlit upgrade degrades the styling rather than breaking the app. */
+  [data-testid="stTabs"] button p {{
+      font-family: 'Inter Tight', sans-serif; font-weight: 500;
+  }}
+  [data-testid="stSidebar"] {{ border-right: 1px solid rgba(0,0,0,0.08); }}
+  h2, h3 {{ font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.01em; }}
+
+  .lexis-side-mark {{
+      font-family: 'Fraunces', Georgia, serif;
+      font-size: 1.75rem; font-weight: 700; letter-spacing: -0.02em;
+      color: {PALETTE['accent']}; line-height: 1; margin: 0 0 0.2rem 0;
+  }}
+  .lexis-side-sub {{
+      font-family: 'Inter Tight', sans-serif; font-size: 0.85rem;
+      color: {PALETTE['muted']}; margin: 0;
+  }}
+  .lexis-side-label {{
+      font-family: 'Inter Tight', sans-serif; font-size: 0.7rem;
+      font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase;
+      color: {PALETTE['muted']}; margin: 0 0 0.35rem 0;
+  }}
+  .lexis-src {{
+      font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+      font-size: 0.74rem; line-height: 1.9; color: {PALETTE['ink']};
+  }}
+  .lexis-dot {{
+      display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+      margin-right: 7px; vertical-align: 1px;
+  }}
+  [data-testid="stSidebar"] {{
+      background: {PALETTE['paper']};
+      border-right: 1px solid {PALETTE['rule']};
+  }}
+  [data-testid="stTabs"] button p {{ font-size: 0.95rem; }}
+  .stButton button {{
+      font-family: 'Inter Tight', sans-serif; font-weight: 500;
+      border-radius: 4px;
+  }}
+
+  @media (prefers-reduced-motion: reduce) {{
+      .lexis-rung {{ transition: none; }}
+  }}
 </style>
 """
+
+
+def render_ladder(user_level: int) -> str:
+    """Draw the CEFR ladder with the reader's rung filled and the next outlined."""
+    rungs = []
+    for lvl, name in CEFR_LEVELS.items():
+        if lvl < user_level:
+            cls, style = "past", f"background:{LADDER[lvl-1]};opacity:0.45"
+        elif lvl == user_level:
+            cls, style = "here", f"background:{LADDER[lvl-1]}"
+        elif lvl == user_level + 1:
+            cls, style = "next", ""
+        else:
+            cls, style = "", ""
+        rungs.append(f"<div class='lexis-rung {cls}' style='{style}'>{name}</div>")
+    nxt = CEFR_LEVELS.get(user_level + 1)
+    key = (f"You read at {CEFR_LEVELS[user_level]}. "
+           + (f"Words at {nxt} are highlighted for you." if nxt
+              else "You are at the top of the scale."))
+    return (f"<div class='lexis-ladder-key'>{key}</div>"
+            f"<div class='lexis-ladder'>{''.join(rungs)}</div>")
+
 
 
 # 3. fallback demo data...  (keeps the app runnable before my other teammates deliver)
@@ -250,7 +419,7 @@ def load_vocab() -> tuple[pd.DataFrame, str, str | None]:
             out = out.explode("word")
             out["word"] = out["word"].str.strip()
 
-            # Accept either numeric (1-6) or string ("B1") level encodings.
+            # Accept either numeric (1-6) or string ("B1") level encodings...
             # Do not branch on dtype: pandas >=3.0 gives text columns a `str` dtype rather than `object`, so a dtype check silently sends real CEFR strings down the numeric path and NaNs out every row...
             levels = out[level_col]
             if pd.api.types.is_numeric_dtype(levels):
@@ -384,6 +553,15 @@ def heuristic_level(word: str) -> int:
     return 6
 
 
+def _word_frequency(word: str) -> float:
+    """Zipf frequency, recomputed live so the model sees the same scale it was
+    trained on. Jadzia's frequency column is wordfreq's Zipf scale (verified:
+    correlation 1.000 on a 300-word sample), so train and serve agree."""
+    if zipf_frequency is None:
+        return 0.0
+    return float(zipf_frequency(word.lower().strip("'-"), "en"))
+
+
 @dataclass
 class Token:
     """One piece of a passage: either a word (is_word=True) or the glue between words."""
@@ -417,6 +595,9 @@ class LogicEngine:
         "syllable_count": count_syllables,
         "n_syllables": count_syllables,
         "num_syllables": count_syllables,
+        "frequency": _word_frequency,
+        "zipf_frequency": _word_frequency,
+        "freq": _word_frequency,
     }
 
     def __init__(self, vocab: pd.DataFrame, model=None):
@@ -680,14 +861,21 @@ def page_read(engine: LogicEngine, stories: list[dict]) -> None:
 
     tokens = engine.analyse(story["text"], user_level, learned)
 
+    st.markdown(render_ladder(user_level), unsafe_allow_html=True)
+    nxt = CEFR_LEVELS.get(min(6, user_level + 1))
     st.markdown(
         f"<div class='lexis-legend'>"
-        f"<span class='lexis-swatch' style='background:{PALETTE['learn_bg']};"
+        f"<span class='lexis-key'>"
+        f"<span class='lexis-swatch' style='background:linear-gradient(180deg,"
+        f"transparent 52%,{PALETTE['learn_bg']} 52%);"
         f"border-bottom:2px solid {PALETTE['learn_line']}'></span>"
-        f"Next for you ({CEFR_LEVELS[min(6, user_level + 1)]}) &nbsp;&nbsp;"
-        f"<span class='lexis-swatch' style='background:{PALETTE['stretch_bg']};"
+        f"Next for you &middot; {nxt}</span>"
+        f"<span class='lexis-key'>"
+        f"<span class='lexis-swatch' style='background:linear-gradient(180deg,"
+        f"transparent 52%,{PALETTE['stretch_bg']} 52%);"
         f"border-bottom:2px dotted {PALETTE['stretch_line']}'></span>"
-        f"Stretch &nbsp;&nbsp; hover any highlight for its meaning"
+        f"Stretch &middot; above {nxt}</span>"
+        f"<span class='lexis-hint'>hover a highlight for its meaning</span>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -712,10 +900,18 @@ def page_read(engine: LogicEngine, stories: list[dict]) -> None:
 
     for key, tok in sorted(flagged.items(), key=lambda kv: (kv[1].level or 0, kv[0])):
         gloss = story.get("synonyms", {}).get(key, "")
-        c1, c2, c3 = st.columns([2, 4, 1])
-        c1.markdown(f"**{key}** &nbsp; `{CEFR_LEVELS[tok.level]}`")
-        c2.write(gloss if gloss else "_no synonym in the library yet_")
-        if c3.button("Got it", key=f"learn_{key}"):
+        c1, c2 = st.columns([6, 1])
+        c1.markdown(
+            f"<div class='lexis-entry {tok.status}'>"
+            f"<span class='lexis-headword'>{html.escape(key)}</span>"
+            f"<span class='lexis-chip' style='background:{LADDER[tok.level-1]}'>"
+            f"{CEFR_LEVELS[tok.level]}</span><br>"
+            f"<span class='lexis-gloss'>"
+            + (html.escape(gloss) if gloss else "<em>no simpler synonym found</em>")
+            + "</span></div>",
+            unsafe_allow_html=True,
+        )
+        if c2.button("Got it", key=f"learn_{key}"):
             learned.add(key)
             st.rerun()
 
@@ -911,11 +1107,11 @@ def _plot_confusion(cm, labels, plt) -> None:
 
 
 # 8. The App shell...
-# ---------------------------------------------------------------------------
+
 
 
 def main() -> None:
-    st.set_page_config(page_title="Lexis \u2014 vocabulary tutor",
+    st.set_page_config(page_title="Wordify \u2014 vocabulary tutor",
                        page_icon="\u25e7", layout="wide")
     st.markdown(CSS, unsafe_allow_html=True)
 
@@ -935,13 +1131,19 @@ def main() -> None:
 
     # sidebar...
     with st.sidebar:
-        st.markdown("### Lexis")
-        st.caption("Read real passages at the edge of your vocabulary.")
+        st.markdown(
+            "<div class='lexis-side-mark'>Wordify</div>"
+            "<p class='lexis-side-sub'>Read real passages at the edge of your "
+            "vocabulary.</p>",
+            unsafe_allow_html=True,
+        )
         st.divider()
+        st.markdown("<p class='lexis-side-label'>Your level</p>",
+                    unsafe_allow_html=True)
 
         current = st.session_state.get("user_level")
         picked = st.selectbox(
-            "Your level",
+            "Your level", label_visibility="collapsed",
             options=list(CEFR_LEVELS),
             index=(current - 1) if current else 2,
             format_func=lambda i: f"{CEFR_LEVELS[i]} \u2014 {CEFR_BLURBS[CEFR_LEVELS[i]]}",
@@ -952,16 +1154,18 @@ def main() -> None:
             st.session_state["placed_by"] = "self"
 
         st.divider()
-        st.markdown("<div class='lexis-status'>", unsafe_allow_html=True)
-        st.caption("Data sources")
-        for label, src in (("vocab", status.vocab), ("stories", status.stories),
-                           ("model", status.model)):
-            mark = "\u25cf" if src not in ("demo", "none") else "\u25cb"
+        st.markdown("<p class='lexis-side-label'>Data sources</p>",
+                    unsafe_allow_html=True)
+        for label, src_ in (("vocabulary", status.vocab), ("passages", status.stories),
+                            ("model", status.model)):
+            live = src_ not in ("demo", "none")
+            colour = PALETTE["accent"] if live else PALETTE["rule"]
             st.markdown(
-                f"<div class='lexis-status'>{mark} {label}: {src}</div>",
+                f"<div class='lexis-src'>"
+                f"<span class='lexis-dot' style='background:{colour}'></span>"
+                f"{label}: {src_}</div>",
                 unsafe_allow_html=True,
             )
-        st.markdown("</div>", unsafe_allow_html=True)
 
         missing = [
             name for name, src_ in (("vocabulary", status.vocab),
@@ -980,10 +1184,13 @@ def main() -> None:
     st.session_state.setdefault("user_level", picked)
 
     #Main tabs.
-    st.title("Lexis")
-    st.caption(
-        "A vocabulary tutor that finds your level, then highlights the words "
-        "just past it."
+    st.markdown(
+        "<div class='lexis-masthead'>"
+        "<div class='lexis-wordmark'>Wordify</div>"
+        "<p class='lexis-tagline'>A vocabulary tutor that finds your level, "
+        "then highlights the words just past it.</p>"
+        "</div>",
+        unsafe_allow_html=True,
     )
 
     tab_read, tab_place, tab_progress, tab_dev = st.tabs(

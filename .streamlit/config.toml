@@ -1,0 +1,14 @@
+# A reading app belongs on paper, not on a dark console. Fixing the theme here
+# means the app looks the same on every machine in the team.
+[theme]
+base                    = "light"
+primaryColor            = "#17715F"
+backgroundColor         = "#FBFAF6"
+secondaryBackgroundColor= "#F1EDE3"
+textColor               = "#14161F"
+
+[server]
+headless = true
+
+[browser]
+gatherUsageStats = false

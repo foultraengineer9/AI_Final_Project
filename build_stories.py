@@ -1,13 +1,13 @@
-"""Build stories_library.json from Precious's passages + Jadzia's CEFR vocabulary.
+"""Building stories_library.json from Precious's passages + Jadzia's CEFR vocabulary...
 
 Precious's notebook picked the WordNet synonym with the highest spaCy cosine
 similarity. Similarity does not imply simplicity, so it could gloss a hard word
 with a harder one ("density" -> "denseness"). This version grades every
 candidate against Jadzia's processed_vocab.csv and keeps only synonyms that are
-strictly EASIER than the word they explain, which is the whole point of a gloss.
+strictly easier than the word they explain, which is the whole point of a gloss.
 
 Using Jadzia's CSV rather than cefrpy also removes the second CEFR source, so
-the tooltips and the app's highlighting now agree by construction.
+the tooltips and the app's highlighting now agree by construction...
 """
 import json
 import re
@@ -18,7 +18,7 @@ from nltk.corpus import wordnet as wn
 
 CEFR = {1: "A1", 2: "A2", 3: "B1", 4: "B2", 5: "C1", 6: "C2"}
 
-# --- Jadzia's vocabulary, cleaned the same way the app cleans it -------------
+
 df = pd.read_csv("data/processed_vocab.csv")
 df["word"] = df["headword"].astype(str).str.strip().str.lower()
 df["word"] = df["word"].str.split("/")
@@ -35,9 +35,7 @@ LEVEL = dict(zip(df.word, df.level))
 FREQ = dict(zip(df.word, df["frequency"])) if "frequency" in df else {}
 POS = dict(zip(df.word, df["POS"].astype(str).str.lower())) if "POS" in df else {}
 
-# Jadzia's POS labels -> WordNet POS tags, so we only consider synsets for the
-# part of speech the word actually is. Without this, WordNet's rarer senses
-# produce wrong glosses ("provided" -> "leave", "outer" -> "out").
+
 POS_TO_WN = {"noun": "n", "verb": "v", "adjective": "a", "adverb": "r"}
 print(f"vocabulary: {len(LEVEL)} words")
 
@@ -52,7 +50,7 @@ STOP = {
 }
 
 
-MIN_CAND_FREQ = 2.8     # Zipf; below this the "simpler" word is itself obscure
+MIN_CAND_FREQ = 2.8     
 
 
 def _same_stem(a: str, b: str) -> bool:
@@ -105,7 +103,7 @@ for story in stories:
         if w in STOP or w in synonyms or len(w) < 4:
             continue
         level = LEVEL.get(w)
-        if level is None or level < 3:      # only gloss B1 and above
+        if level is None or level < 3:      
             continue
         syn = best_synonym(w, level)
         if syn:
