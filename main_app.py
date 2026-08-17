@@ -961,8 +961,12 @@ def page_developer(vocab: pd.DataFrame, model, evaluation: dict | None,
         pd.DataFrame([
             {"Artifact": "processed_vocab.csv", "Owner": "Jadzia", "Source": status.vocab},
             {"Artifact": "stories_library.json", "Owner": "Precious", "Source": status.stories},
-            {"Artifact": "difficulty_model.pkl", "Owner": "Afia", "Source": status.model},
-            {"Artifact": "model_eval.json", "Owner": "Afia", "Source": status.evaluation},
+            {"Artifact": "difficulty_model.pkl", "Owner": "Keli (deployment model)",
+             "Source": status.model},
+            {"Artifact": "model_eval.json", "Owner": "Keli (deployment model)",
+             "Source": status.evaluation},
+            {"Artifact": "final_project.ipynb", "Owner": "Afia (research ensemble)",
+             "Source": "not deployable \u2014 3 tiers, 768D embeddings"},
         ]),
         hide_index=True,
         width="stretch",
@@ -1029,7 +1033,13 @@ def page_developer(vocab: pd.DataFrame, model, evaluation: dict | None,
                 m2.metric("Macro precision", f"{evaluation['macro_precision']:.3f}")
             if "macro_recall" in evaluation:
                 m3.metric("Macro recall", f"{evaluation['macro_recall']:.3f}")
-        st.caption("Computed by Afia on a held-out test set and exported to model_eval.json.")
+        st.caption(
+            "Six-level deployment model, evaluated on a stratified held-out split "
+            "and exported to model_eval.json. Afia's research ensemble "
+            "(final_project.ipynb) scores higher \u2014 0.70 accuracy \u2014 but "
+            "predicts three tiers and needs sentence embeddings the app cannot "
+            "recompute per word at read time."
+        )
 
     elif model is not None:
         st.warning(
