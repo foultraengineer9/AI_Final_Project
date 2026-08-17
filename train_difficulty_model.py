@@ -1,22 +1,13 @@
 """Train a CEFR difficulty classifier the application can actually use.
 
-WHY THIS EXISTS
----------------
-Afia's ensemble (final_project.ipynb) is the project's primary modelling work,
-but it cannot drive the reading view as built: it predicts three broad tiers
-rather than six CEFR levels, it is never serialised to disk, and it depends on
-768-dimensional sentence embeddings the app cannot recompute for an unseen word
-at read time.
+Why does this exist?
 
-This is a deliberately smaller model that satisfies the interface contract in
-TEAM_CONTRACT.md: six classes, saved to disk, and trained ONLY on features the
-application can recompute for any word it meets in a passage —
+Afia's ensemble (final_project.ipynb) is the project's primary modelling work, but it cannot drive the reading view as built: it predicts three broad tiers rather than six CEFR levels, it is never serialised to disk, and it depends on
+768-dimensional sentence embeddings the app cannot recompute for an unseen word at read time...
 
-    word length, syllable count, Zipf word frequency
-
-Frequency is recoverable because Jadzia's `frequency` column is the wordfreq
-Zipf scale (verified: correlation 1.000 on a 300-word sample), so the same value
-can be computed live rather than looked up.
+    This is a deliberately smaller model that satisfies the interface contract in
+TEAM_CONTRACT.md: six classes, saved to disk, and trained on features the application can recompute for any word it meets in a passage — the word length, syllable count, Zipf word frequency...
+Frequency is recoverable because Jadzia's `frequency` column is the wordfreq Zipf scale, so the same value can be computed live rather than looked up...
 
 Outputs models/difficulty_model.pkl and models/model_eval.json.
 """
@@ -70,12 +61,11 @@ print(f"training rows: {len(X)}   features: {list(X.columns)}")
 X_tr, X_te, y_tr, y_te = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y)
 
-# class_weight='balanced' because the CEFR bands are imbalanced 2.8:1 and the
-# rare levels are exactly the readers we care about not failing.
+# class_weight='balanced' because the CEFR bands are imbalanced 2.8:1 and the rare levels are exactly the readers we care about not failing...
 clf = RandomForestClassifier(
     n_estimators=120, max_depth=12, min_samples_leaf=8,
     class_weight="balanced", random_state=42, n_jobs=-1)
-clf.fit(X_tr, y_tr)                       # fit on a DataFrame -> feature names recorded
+clf.fit(X_tr, y_tr)                       
 
 y_pred = clf.predict(X_te)
 labels = sorted(np.unique(y))

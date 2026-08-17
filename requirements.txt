@@ -2,7 +2,7 @@
 streamlit>=1.49
 pandas>=2.0
 matplotlib>=3.7
-# needed only to load Afia's model and render Developer Mode
+# needed to load the difficulty model and render Developer Mode
 scikit-learn>=1.3
 joblib>=1.3
 wordfreq>=3.0
