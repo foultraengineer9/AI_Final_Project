@@ -38,7 +38,7 @@ def count_syllables(word: str) -> int:
     return max(1, n)
 
 
-# --- data, cleaned exactly as the application cleans it ---------------------
+
 df = pd.read_csv("data/processed_vocab.csv")
 df["word"] = df["headword"].astype(str).str.strip().str.lower().str.split("/")
 df = df.explode("word")

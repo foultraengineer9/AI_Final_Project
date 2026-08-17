@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import main_app as m  # noqa: E402
+import main_app as m  
 
 
 @pytest.fixture(scope="module")
@@ -19,7 +19,7 @@ def engine(vocab):
     return m.LogicEngine(vocab, None)
 
 
-# --- tokenising -------------------------------------------------------------
+#tokenising...
 
 def test_tokenising_is_lossless(engine):
     """Every character must survive, or the rendered passage won't match the source."""
@@ -32,8 +32,8 @@ def test_words_are_classified_relative_to_user_level(engine):
     text = "The gigantic distant sun."          # gigantic=B1(3), distant=B1(3)
     at_a2 = {t.text: t.status for t in engine.analyse(text, 2, set()) if t.is_word}
     at_c2 = {t.text: t.status for t in engine.analyse(text, 6, set()) if t.is_word}
-    assert at_a2["gigantic"] == "learn"          # exactly one level above -> learn
-    assert at_c2["gigantic"] == "known"          # below the reader -> unmarked
+    assert at_a2["gigantic"] == "learn"          # exactly one level above = learn
+    assert at_c2["gigantic"] == "known"          # below the reader = unmarked
 
 
 def test_learned_words_stop_being_highlighted(engine):
@@ -42,7 +42,7 @@ def test_learned_words_stop_being_highlighted(engine):
     assert [t.status for t in engine.analyse(text, 2, {"gigantic"}) if t.text == "gigantic"] == ["known"]
 
 
-# --- rendering --------------------------------------------------------------
+#rendering..
 
 def test_rendering_escapes_html(engine):
     """A passage containing markup must not be able to inject it into the page."""
@@ -58,7 +58,7 @@ def test_rendering_applies_both_highlight_classes(engine):
     assert "w-learn" in out and "w-stretch" in out
 
 
-# --- features ---------------------------------------------------------------
+#Features
 
 @pytest.mark.parametrize("word,expected", [
     ("dog", 1), ("water", 2), ("happy", 2), ("gigantic", 3), ("meticulous", 4),
@@ -74,7 +74,7 @@ def test_heuristic_is_within_one_level_for_most_of_the_demo_vocab(vocab):
     assert within_one >= 0.80, f"heuristic drifted: only {within_one:.0%} within one level"
 
 
-# --- placement test ---------------------------------------------------------
+#Placement test...
 
 def test_placement_includes_pseudoword_catch_trials(vocab):
     items = m.build_placement_items(vocab)
@@ -102,15 +102,14 @@ def test_a_blank_test_places_at_a1(vocab):
     assert m.score_placement(items, {})["suggested"] == 1
 
 
-# --- vocabulary loading (regressions found against the real dataset) ---------
+#Vocabulary loading (regressions found against the real dataset)...
 
 def _load_from(tmp_path, monkeypatch, csv_text):
     """Point the loader at a temporary CSV and read it."""
     path = tmp_path / "processed_vocab.csv"
     path.write_text(csv_text)
     monkeypatch.setattr(m, "VOCAB_PATH", path)
-    # load_vocab is @st.cache_data, so it would otherwise return the first
-    # test's result for every later test regardless of the patched path.
+    # load_vocab is @st.cache_data, so it would otherwise return the first test's result for every later test regardless of the patched path...
     m.load_vocab.clear()
     return m.load_vocab()
 
