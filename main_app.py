@@ -1029,10 +1029,14 @@ def _render_ensemble_opinion(story: dict, tokens: list[Token], user_level: int) 
         missing = afia_ensemble.missing_dependencies()
         if missing:
             st.info(
-                "Not installed on this machine. To enable: `pip install "
-                + " ".join(missing) + "`"
-                + (" && `python -m spacy download en_core_web_sm`"
+                "Not installed on this machine. To enable (Python 3.12): "
+                "`pip install " + " ".join(missing) + "`"
+                + (", `python -m spacy download en_core_web_sm`"
                    if "spacy" in missing else "")
+                + (", then download the WordNet data"
+                   if "nltk" in missing else "")
+                + ". Launch with `WORDIFY_NO_TF=1 streamlit run main_app.py`. "
+                "Do not install TensorFlow \u2014 see README."
             )
             return
 

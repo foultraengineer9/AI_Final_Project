@@ -23,10 +23,20 @@ six-level model still drives the reading view; this shows what the stronger but
 coarser classifier makes of the same passage. Keeping both visible is the honest
 presentation of a genuine trade-off between accuracy and granularity.
 
-Requires, on the machine running the app:
-    pip install sentence-transformers spacy tensorflow xgboost syllables
+Requires, on the machine running the app (Python 3.12; TensorFlow has no 3.13+
+build, and installing it here would break the reduced ensemble anyway):
+
+    pip install sentence-transformers spacy xgboost nltk syllables groq python-dotenv
     python -m spacy download en_core_web_sm
-The first call also downloads all-mpnet-base-v2 (~420 MB) from Hugging Face.
+    python -c "import nltk; nltk.download('wordnet'); nltk.download('omw-1.4')"
+
+Then launch with:  WORDIFY_NO_TF=1 streamlit run main_app.py
+
+Deliberately NOT tensorflow. Loading it alongside PyTorch segfaults the
+interpreter on Apple Silicon, so predictor_notf.py runs a reduced ensemble
+(XGBoost + Random Forest, weights renormalised to 0.75/0.25) instead.
+
+The first call downloads all-mpnet-base-v2 (~420 MB) from Hugging Face.
 """
 
 from __future__ import annotations
@@ -84,11 +94,13 @@ def bundle_status() -> tuple[bool, str]:
 def missing_dependencies() -> list[str]:
     """Heavy imports the ensemble needs that aren't installed. Cheap to call."""
     import importlib.util
+    # tensorflow is deliberately absent: the reduced ensemble runs without it,
+    # and installing it causes the OpenMP crash this module exists to avoid.
     needed = {
+        "xgboost": "xgboost",
         "sentence_transformers": "sentence-transformers",
         "spacy": "spacy",
-        "tensorflow": "tensorflow",
-        "xgboost": "xgboost",
+        "nltk": "nltk",
         "syllables": "syllables",
     }
     return [pip_name for module, pip_name in needed.items()
