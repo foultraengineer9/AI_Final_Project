@@ -2,7 +2,7 @@
 
 Run from the project root:  python -m pytest tests/ -v
 These assert the app renders and degrades gracefully; they do not need any
-teammate artifacts to be present.
+teammate artifacts to be present...
 """
 import matplotlib
 matplotlib.use("Agg")

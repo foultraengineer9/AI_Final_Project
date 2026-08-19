@@ -1,0 +1,15 @@
+{
+  "embedding_model_name": "all-mpnet-base-v2",
+  "spacy_model_name": "en_core_web_sm",
+  "n_clusters": 6,
+  "ensemble_weights": {
+    "xgb": 0.45,
+    "rf": 0.15,
+    "mlp": 0.4
+  },
+  "tier_mapping": {
+    "0": "Beginner (A1-A2)",
+    "1": "Intermediate (B1-B2)",
+    "2": "Advanced (C1-C2)"
+  }
+}

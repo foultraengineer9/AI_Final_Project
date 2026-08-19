@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-import main_app as m  
+import main_app as m  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -29,7 +29,7 @@ def test_tokenising_is_lossless(engine):
 
 
 def test_words_are_classified_relative_to_user_level(engine):
-    text = "The gigantic distant sun."          # gigantic=B1(3), distant=B1(3)
+    text = "The gigantic distant sun."          # gigantic=B1(3), distant=B1(3)...
     at_a2 = {t.text: t.status for t in engine.analyse(text, 2, set()) if t.is_word}
     at_c2 = {t.text: t.status for t in engine.analyse(text, 6, set()) if t.is_word}
     assert at_a2["gigantic"] == "learn"          # exactly one level above = learn
@@ -42,7 +42,7 @@ def test_learned_words_stop_being_highlighted(engine):
     assert [t.status for t in engine.analyse(text, 2, {"gigantic"}) if t.text == "gigantic"] == ["known"]
 
 
-#rendering..
+#rendering...
 
 def test_rendering_escapes_html(engine):
     """A passage containing markup must not be able to inject it into the page."""
@@ -58,7 +58,7 @@ def test_rendering_applies_both_highlight_classes(engine):
     assert "w-learn" in out and "w-stretch" in out
 
 
-#Features
+#features...
 
 @pytest.mark.parametrize("word,expected", [
     ("dog", 1), ("water", 2), ("happy", 2), ("gigantic", 3), ("meticulous", 4),
@@ -74,7 +74,7 @@ def test_heuristic_is_within_one_level_for_most_of_the_demo_vocab(vocab):
     assert within_one >= 0.80, f"heuristic drifted: only {within_one:.0%} within one level"
 
 
-#Placement test...
+#placement test..
 
 def test_placement_includes_pseudoword_catch_trials(vocab):
     items = m.build_placement_items(vocab)
@@ -102,14 +102,14 @@ def test_a_blank_test_places_at_a1(vocab):
     assert m.score_placement(items, {})["suggested"] == 1
 
 
-#Vocabulary loading (regressions found against the real dataset)...
+#vocabulary loading (regressions found against the real dataset).
 
 def _load_from(tmp_path, monkeypatch, csv_text):
     """Point the loader at a temporary CSV and read it."""
     path = tmp_path / "processed_vocab.csv"
     path.write_text(csv_text)
     monkeypatch.setattr(m, "VOCAB_PATH", path)
-    # load_vocab is @st.cache_data, so it would otherwise return the first test's result for every later test regardless of the patched path...
+    
     m.load_vocab.clear()
     return m.load_vocab()
 
@@ -151,3 +151,41 @@ def test_unreadable_vocab_falls_back_with_an_error_message(tmp_path, monkeypatch
     df, src, err = _load_from(tmp_path, monkeypatch, "colA,colB\n1,2\n")
     assert src == "demo" and err is not None and "could not be read" in err
     assert not df.empty
+
+
+#simplified passage view!
+
+@pytest.mark.parametrize("word,gloss,safe", [
+    ("persistent", "lasting", True),      
+    ("dense", "heavy", True),
+    ("moving", "go", False),              
+    ("existing", "be", False),            
+    ("attached", "attach", False),        
+    ("temperatures", "temperature", False),
+])
+def test_substitution_safety_filter(word, gloss, safe):
+    assert m.substitution_is_safe(word, gloss) is safe
+
+
+def test_simplified_view_only_replaces_highlighted_words(engine):
+    """A word at or below the reader's level must survive untouched."""
+    text = "The gigantic sun."
+    tokens = engine.analyse(text, 6, set())         
+    html_out, swapped = m.render_simplified(tokens, {"gigantic": "huge"})
+    assert swapped == 0
+    assert "gigantic" in html_out and "huge" not in html_out
+
+
+def test_simplified_view_substitutes_and_counts(engine):
+    text = "The gigantic sun."
+    tokens = engine.analyse(text, 2, set())          
+    html_out, swapped = m.render_simplified(tokens, {"gigantic": "huge"})
+    assert swapped == 1
+    assert "huge" in html_out
+    assert 'title="gigantic"' in html_out or "title='gigantic'" in html_out
+
+
+def test_simplified_view_preserves_capitalisation(engine):
+    tokens = engine.analyse("Gigantic stars burn.", 2, set())
+    html_out, swapped = m.render_simplified(tokens, {"gigantic": "huge"})
+    assert swapped == 1 and "Huge" in html_out

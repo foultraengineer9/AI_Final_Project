@@ -38,6 +38,11 @@ try:
 except ImportError:                      # optional; frequency features degrade
     zipf_frequency = None
 
+try:
+    import afia_ensemble
+except ImportError:                      # optional second-opinion classifier
+    afia_ensemble = None
+
 
 # 1. The  configuration...:
 
@@ -50,6 +55,7 @@ VOCAB_PATH = DATA_DIR / "processed_vocab.csv"
 STORIES_PATH = DATA_DIR / "stories_library.json"
 MODEL_PATH = MODEL_DIR / "difficulty_model.pkl"
 EVAL_PATH = MODEL_DIR / "model_eval.json"
+
 
 # CEFR encoding... (agreed with Jadzia: A1=1 ... C2=6)
 CEFR_LEVELS = {1: "A1", 2: "A2", 3: "B1", 4: "B2", 5: "C1", 6: "C2"}
@@ -192,6 +198,21 @@ CSS = f"""
   }}
   /* Word already mastered by the reader — left completely plain on purpose. */
   .w-known {{ }}
+  /* Tier mode: one colour, because three tiers cannot express "one above". */
+  .w-tier {{
+      background: linear-gradient(180deg, transparent 52%, #F0C674 52%);
+      border-bottom: 2px solid #8A6A00;
+      padding: 0 2px;
+      cursor: help;
+  }}
+  /* A word that has been swapped for a simpler synonym. */
+  .w-swapped {{
+      background: linear-gradient(180deg, transparent 52%, #CFE8D8 52%);
+      border-bottom: 2px solid {PALETTE['accent']};
+      padding: 0 2px;
+      cursor: help;
+  }}
+  .lexis-simplified {{ border-left-color: {PALETTE['accent']}; }}
 
   /* Word list rendered as dictionary entries rather than plain rows. */
   .lexis-entry {{
@@ -499,6 +520,17 @@ def load_model() -> tuple[object | None, str | None]:
             )
 
 
+@st.cache_resource(show_spinner="Loading the research ensemble...")
+def load_ensemble():
+    """Instantiate Afia's ensemble, or return why it isn't available."""
+    if afia_ensemble is None:
+        return None, "`afia_ensemble.py` is not present."
+    try:
+        return afia_ensemble.load_predictor(), None
+    except Exception as exc:  # noqa: BLE001 - shown to the user, not raised
+        return None, str(exc)
+
+
 @st.cache_data(show_spinner=False)
 def load_evaluation() -> dict | None:
     """Load Afia's held-out evaluation report, if she has exported one."""
@@ -671,6 +703,127 @@ class LogicEngine:
 
             tokens.append(Token(chunk, True, level, status, source))
         return tokens
+
+
+# Glosses that are grammatically safe as words but useless as replacements:
+# bare auxiliaries and light verbs read as broken English in a sentence.
+UNUSABLE_GLOSSES = {"be", "go", "do", "have", "get", "make", "take", "put", "is"}
+
+
+def substitution_is_safe(word: str, gloss: str) -> bool:
+    """Whether swapping `word` for `gloss` keeps the sentence grammatical.
+
+    WordNet returns uninflected lemmas, so substituting them directly produces
+    errors like "constantly go" for "constantly moving" or "be below the
+    thermocline" for "existing below". We only substitute when the surface forms
+    are compatible: either the two share an inflectional ending, or the original
+    carries none.
+    """
+    w, g = word.lower(), gloss.lower()
+    if g in UNUSABLE_GLOSSES or len(g) < 3:
+        return False
+    for suffix in ("ing", "ed", "es", "s"):
+        if w.endswith(suffix):
+            return g.endswith(suffix)      # both inflected the same way, or skip
+    return True
+
+
+def render_simplified(tokens: list[Token], synonyms: dict[str, str]) -> tuple[str, int]:
+    """Rebuild the passage with every highlighted word swapped for its synonym.
+
+    Only substitutes glosses the library carries, each of which was certified
+    strictly easier than the word it replaces. Words with no certified simpler
+    synonym are left alone rather than guessed at, so the returned count is the
+    honest number of substitutions made.
+    """
+    parts: list[str] = ["<div class='lexis-page lexis-simplified'><p>"]
+    swapped = 0
+    for tok in tokens:
+        if not tok.is_word:
+            if "\n\n" in tok.text:
+                parts.append("</p><p>")
+                parts.append(html.escape(tok.text.replace("\n\n", "")))
+            else:
+                parts.append(html.escape(tok.text))
+            continue
+
+        key = tok.text.lower().strip("'-")
+        gloss = synonyms.get(key) if tok.status != "known" else None
+        if gloss and not substitution_is_safe(key, gloss):
+            gloss = None
+        if not gloss:
+            parts.append(html.escape(tok.text))
+            continue
+
+        # Preserve the original capitalisation of the word being replaced.
+        if tok.text[:1].isupper():
+            gloss = gloss[:1].upper() + gloss[1:]
+        swapped += 1
+        parts.append(
+            f"<span class='w-swapped' title='{html.escape(tok.text)}'>"
+            f"{html.escape(gloss)}</span>"
+        )
+
+    parts.append("</p></div>")
+    return "".join(parts), swapped
+
+
+TIER_NAMES = {0: "Beginner", 1: "Intermediate", 2: "Advanced"}
+TIER_COLOURS = {0: "#17715F", 1: "#D9A62E", 2: "#6B4FA8"}
+
+
+@st.cache_data(show_spinner=False)
+def _tier_analysis(title: str, text: str, target_tier: int):
+    """Cache the ensemble's verdict per (passage, tier).
+
+    Each word is embedded individually, so re-running on every Streamlit rerun
+    would make the reading view unusable. Keyed on title and tier.
+    """
+    predictor, _ = load_ensemble()
+    return afia_ensemble.tier_tokens(predictor, text, target_tier)
+
+
+def render_tier_ladder(target_tier: int) -> str:
+    """Three-rung ladder for tier mode. Her model has no finer distinction."""
+    rungs = []
+    for tier, name in TIER_NAMES.items():
+        if tier < target_tier:
+            cls, style = "past", f"background:{TIER_COLOURS[tier]};opacity:0.45"
+        elif tier == target_tier:
+            cls, style = "here", f"background:{TIER_COLOURS[tier]}"
+        else:
+            cls, style = "next", ""
+        rungs.append(f"<div class='lexis-rung {cls}' style='{style}'>{name}</div>")
+    key = (f"Reading at {TIER_NAMES[target_tier]}. The research ensemble marks "
+           "every word it judges above this tier.")
+    return (f"<div class='lexis-ladder-key'>{key}</div>"
+            f"<div class='lexis-ladder'>{''.join(rungs)}</div>")
+
+
+def render_tier_passage(tokens) -> str:
+    """Passage rendered from her tier verdicts.
+
+    One highlight colour only: with three tiers there is no "exactly one level
+    above", so the learn/stretch distinction the six-level view depends on
+    cannot be expressed here.
+    """
+    parts = ["<div class='lexis-page'><p>"]
+    for tok in tokens:
+        if not tok.is_word:
+            if "\n\n" in tok.text:
+                parts.append("</p><p>")
+                parts.append(html.escape(tok.text.replace("\n\n", "")))
+            else:
+                parts.append(html.escape(tok.text))
+            continue
+        safe = html.escape(tok.text)
+        if tok.status != "above":
+            parts.append(safe)
+            continue
+        tip = f"{TIER_NAMES.get(tok.tier, '?')} \u2014 above your tier"
+        parts.append(f"<span class='w-tier' title='{html.escape(tip)}'>{safe}</span>")
+    parts.append("</p></div>")
+    return "".join(parts)
 
 
 def render_passage(tokens: list[Token], synonyms: dict[str, str]) -> str:
@@ -851,6 +1004,93 @@ def page_placement(vocab: pd.DataFrame) -> None:
         st.rerun()
 
 
+def _render_ensemble_opinion(story: dict, tokens: list[Token], user_level: int) -> None:
+    """Show Afia's research ensemble's verdict on the same passage.
+
+    Collapsed by default and loaded only on demand, because the ensemble needs a
+    768-dimensional embedding model that takes time to load. The six-level model
+    still drives the reading view above; this is a second opinion, and the
+    agreement rate between the two is a cross-check that needs no labels.
+    """
+    if afia_ensemble is None:
+        return
+
+    ready, reason = afia_ensemble.bundle_status()
+    if not ready:
+        return                            # bundle absent: stay silent, not broken
+
+    with st.expander("Compare with the research ensemble (3-tier)"):
+        st.caption(
+            "Afia's XGBoost + Random Forest + neural late-fusion ensemble over "
+            "sentence embeddings. Stronger (0.70 accuracy) but coarser: it "
+            "predicts three tiers, so it cannot drive the six-level reading view "
+            "above. Loading it takes a moment on first use."
+        )
+        missing = afia_ensemble.missing_dependencies()
+        if missing:
+            st.info(
+                "Not installed on this machine. To enable: `pip install "
+                + " ".join(missing) + "`"
+                + (" && `python -m spacy download en_core_web_sm`"
+                   if "spacy" in missing else "")
+            )
+            return
+
+        if not st.button("Run the ensemble on this passage", key="run_ensemble"):
+            return
+
+        predictor, err = load_ensemble()
+        if err:
+            st.warning(err)
+            return
+
+        try:
+            words, reconstructed = afia_ensemble.analyse(
+                predictor, story["text"], user_level
+            )
+        except Exception as exc:          # noqa: BLE001 - never kill the page
+            st.error(f"The ensemble failed on this passage: {exc}")
+            return
+
+        flagged = [w for w in words if w.challenging]
+        stats = afia_ensemble.agreement(words, tokens)
+
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Words it flags", len(flagged))
+        c2.metric("Agreement with our model", f"{stats['rate']:.0%}")
+        c3.metric("Words compared", stats["compared"])
+
+        if flagged:
+            st.dataframe(
+                pd.DataFrame([
+                    {"Word": w.word, "Tier": afia_ensemble.TIER_LABEL[w.tier],
+                     "CEFR band": w.band, "Protected": "yes" if w.protected else ""}
+                    for w in flagged
+                ]),
+                hide_index=True, width="stretch",
+            )
+
+        st.caption(
+            f"The two models disagree on {stats['only_ensemble']} words the "
+            f"ensemble alone flags and {stats['only_app']} the six-level model "
+            "alone flags. Disagreement concentrates on words near a tier "
+            "boundary, where three tiers and six levels cannot align exactly."
+        )
+
+        if reconstructed:
+            st.markdown("**Its rewritten passage** (Groq phrase rewriting)")
+            st.markdown(
+                f"<div class='lexis-page lexis-simplified'><p>"
+                f"{html.escape(reconstructed)}</p></div>",
+                unsafe_allow_html=True,
+            )
+        else:
+            st.caption(
+                "Phrase rewriting is disabled because no GROQ_API_KEY is set. "
+                "Classification above is unaffected."
+            )
+
+
 def page_read(engine: LogicEngine, stories: list[dict]) -> None:
     user_level = st.session_state["user_level"]
     learned: set[str] = st.session_state.setdefault("learned", set())
@@ -858,6 +1098,51 @@ def page_read(engine: LogicEngine, stories: list[dict]) -> None:
     titles = [s["title"] for s in stories]
     choice = st.selectbox("Passage", titles, key="story_choice")
     story = stories[titles.index(choice)]
+
+    # --- tier mode: her ensemble drives the whole reading view --------------
+    if st.session_state.get("tier_mode"):
+        target_tier = st.radio(
+            "Your tier",
+            options=[0, 1, 2],
+            index=st.session_state.get("target_tier", 1),
+            format_func=lambda t: TIER_NAMES[t],
+            horizontal=True,
+            key="target_tier_radio",
+        )
+        st.session_state["target_tier"] = target_tier
+        predictor, err = load_ensemble()
+        if predictor is None:
+            st.error(
+                "Tier mode needs the research ensemble, which is not available: "
+                f"{err or 'bundle not installed'}. Switch it off in the sidebar "
+                "to return to the six-level view."
+            )
+            return
+        with st.spinner("Classifying every word with the research ensemble..."):
+            try:
+                tier_toks, flagged = _tier_analysis(
+                    story["title"], story["text"], target_tier
+                )
+            except Exception as exc:  # noqa: BLE001
+                st.error(f"The ensemble failed on this passage: {exc}")
+                return
+
+        st.markdown(render_tier_ladder(target_tier), unsafe_allow_html=True)
+        st.markdown(
+            "<div class='lexis-legend'><span class='lexis-key'>"
+            "<span class='lexis-swatch' style='background:linear-gradient("
+            "180deg,transparent 52%,#F0C674 52%);border-bottom:2px solid "
+            "#8A6A00'></span>Above your tier</span>"
+            "<span class='lexis-hint'>one colour only \u2014 three tiers cannot "
+            "express \u201cone level above\u201d</span></div>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(render_tier_passage(tier_toks), unsafe_allow_html=True)
+        st.caption(
+            f"{flagged} of {sum(1 for t in tier_toks if t.is_word)} words flagged "
+            "by the research ensemble (XGBoost + Random Forest, reduced)."
+        )
+        return
 
     tokens = engine.analyse(story["text"], user_level, learned)
 
@@ -881,6 +1166,24 @@ def page_read(engine: LogicEngine, stories: list[dict]) -> None:
     )
     st.write("")
     st.markdown(render_passage(tokens, story.get("synonyms", {})), unsafe_allow_html=True)
+
+    # The same passage with certified-simpler synonyms substituted in, shown
+    # beneath the original so a reader can compare the two directly.
+    _render_ensemble_opinion(story, tokens, user_level)
+
+    simplified, swapped = render_simplified(tokens, story.get("synonyms", {}))
+    if swapped:
+        st.write("")
+        with st.expander(f"Show a simplified version ({swapped} words replaced)"):
+            st.markdown(
+                f"<div class='lexis-legend'><span class='lexis-key'>"
+                f"<span class='lexis-swatch' style='background:linear-gradient("
+                f"180deg,transparent 52%,#CFE8D8 52%);border-bottom:2px solid "
+                f"{PALETTE['accent']}'></span>Replaced &middot; hover to see the "
+                f"original word</span></div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(simplified, unsafe_allow_html=True)
 
     
     flagged = {}
@@ -1162,6 +1465,26 @@ def main() -> None:
             # manual change overrides a placement-test result, so record.
             st.session_state["user_level"] = picked
             st.session_state["placed_by"] = "self"
+
+        st.divider()
+        st.markdown("<p class='lexis-side-label'>Model</p>", unsafe_allow_html=True)
+        ens_ready = afia_ensemble is not None and afia_ensemble.bundle_status()[0]
+        st.toggle(
+            "3-tier mode (research ensemble)",
+            key="tier_mode",
+            disabled=not ens_ready,
+            help=("Replaces the six-level pipeline with Afia's ensemble for the "
+                  "whole reading view. Coarser: three tiers instead of six CEFR "
+                  "levels, and one highlight colour instead of two."
+                  if ens_ready else
+                  "Requires the research ensemble bundle in `wordify/`."),
+        )
+        if st.session_state.get("tier_mode"):
+            st.caption(
+                "Choose your tier on the Read tab. The placement test and "
+                "learned-word tracking use CEFR levels and are unavailable "
+                "in this mode."
+            )
 
         st.divider()
         st.markdown("<p class='lexis-side-label'>Data sources</p>",
